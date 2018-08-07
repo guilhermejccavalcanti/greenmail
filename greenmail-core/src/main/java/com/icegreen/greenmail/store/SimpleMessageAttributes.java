@@ -6,12 +6,11 @@
  */
 package com.icegreen.greenmail.store;
 
-
 import com.icegreen.greenmail.mail.MailAddress;
 import com.icegreen.greenmail.util.GreenMailUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.apache.commons.lang3.StringEscapeUtils;
 import javax.mail.BodyPart;
 import javax.mail.MessagingException;
 import javax.mail.internet.*;
@@ -31,50 +30,88 @@ import java.util.*;
  * @author <a href="mailto:charles@benett1.demon.co.uk">Charles Benett</a>
  * @version 0.2 on 04 Aug 2002
  */
-public class SimpleMessageAttributes
-        implements MailMessageAttributes {
+public class SimpleMessageAttributes implements MailMessageAttributes {
+
     // Logging.
     protected final Logger log = LoggerFactory.getLogger(getClass());
-    private final static String SP = " ";
-    private final static String NIL = "NIL";
-    private final static String Q = "\"";
-    private final static String LB = "(";
-    private final static String RB = ")";
-    private final static boolean DEBUG = false;
-    private final static String MULTIPART = "MULTIPART";
-    private final static String MESSAGE = "MESSAGE";
+
+    private static final String SP = " ";
+
+    private static final String NIL = "NIL";
+
+    private static final String Q = "\"";
+
+    private static final String LB = "(";
+
+    private static final String RB = ")";
+
+    private static final boolean DEBUG = false;
+
+    private static final String MULTIPART = "MULTIPART";
+
+    private static final String MESSAGE = "MESSAGE";
 
     private int uid;
+
     private int messageSequenceNumber;
+
     private Date internalDate;
+
     private String internalDateString;
+
     private String bodyStructure;
+
     private String envelope;
+
     private int size;
+
     private int lineCount;
+
     public MailMessageAttributes[] parts;
+
     private List headers;
 
     //rfc822 or MIME header fields
     //arrays only if multiple values allowed under rfc822
     private String subject;
+
     private String[] from;
+
     private String[] sender;
+
     private String[] replyTo;
+
     private String[] to;
+
     private String[] cc;
+
     private String[] bcc;
+
     private String[] inReplyTo;
+
     private String[] date;
+
     private String[] messageID;
+
     private String contentType;
-    private String primaryType = null;   // parsed from contentType
-    private String secondaryType = null; // parsed from contentType
-    private Set parameters;      // parsed from contentType
+
+    private String primaryType = null;
+
+    // parsed from contentType
+    private String secondaryType = null;
+
+    // parsed from contentType
+    private Set parameters;
+
+    // parsed from contentType
     private String contentID = null;
+
     private String contentDesc = null;
+
     private String contentEncoding = null;
+
     private String interalDateEnvelopeString = null;
+
     private Header contentDisposition = null;
 
     SimpleMessageAttributes() {
@@ -89,7 +126,6 @@ public class SimpleMessageAttributes
         if (null == internalDate) {
             internalDate = new Date();
         }
-
         internalDateString = new SimpleDateFormat("dd-MMM-yyyy hh:mm:ss Z").format(internalDate);
         interalDateEnvelopeString = new MailDateFormat().format(internalDate);
         parseMimePart(msg);
@@ -107,65 +143,53 @@ public class SimpleMessageAttributes
      */
     void parseMimePart(MimePart part) throws MessagingException {
         size = GreenMailUtil.getBody(part).length();
-
         // Section 1 - Message Headers
         if (part instanceof MimeMessage) {
             try {
                 subject = ((MimeMessage) part).getSubject();
             } catch (MessagingException me) {
-//                if (DEBUG) getLogger().debug("Messaging Exception for getSubject: " + me);
             }
         }
         try {
             from = part.getHeader("From");
         } catch (MessagingException me) {
-//            if (DEBUG) getLogger().debug("Messaging Exception for getHeader(From): " + me);
         }
         try {
             sender = part.getHeader("Sender");
         } catch (MessagingException me) {
-//            if (DEBUG) getLogger().debug("Messaging Exception for getHeader(Sender): " + me);
         }
         try {
             replyTo = part.getHeader("Reply To");
         } catch (MessagingException me) {
-//            if (DEBUG) getLogger().debug("Messaging Exception for getHeader(Reply To): " + me);
         }
         try {
             to = part.getHeader("To");
         } catch (MessagingException me) {
-//            if (DEBUG) getLogger().debug("Messaging Exception for getHeader(To): " + me);
         }
         try {
             cc = part.getHeader("Cc");
         } catch (MessagingException me) {
-//            if (DEBUG) getLogger().debug("Messaging Exception for getHeader(To): " + me);
         }
         try {
             bcc = part.getHeader("Bcc");
         } catch (MessagingException me) {
-//            if (DEBUG) getLogger().debug("Messaging Exception for getHeader(To): " + me);
         }
         try {
             inReplyTo = part.getHeader("In Reply To");
         } catch (MessagingException me) {
-//            if (DEBUG) getLogger().debug("Messaging Exception for getHeader(In Reply To): " + me);
         }
         try {
             date = part.getHeader("Date");
         } catch (MessagingException me) {
-//            if (DEBUG) getLogger().debug("Messaging Exception for getHeader(Date): " + me);
         }
         try {
             messageID = part.getHeader("Message-ID");
         } catch (MessagingException me) {
-//            if (DEBUG) getLogger().debug("Messaging Exception for getHeader(messageID): " + me);
         }
         String contentTypeLine = null;
         try {
             contentTypeLine = part.getContentType();
         } catch (MessagingException me) {
-//            if (DEBUG) getLogger().debug("Messaging Exception for getContentType(): " + me);
         }
         if (contentTypeLine != null) {
             decodeContentType(contentTypeLine);
@@ -173,12 +197,10 @@ public class SimpleMessageAttributes
         try {
             contentID = part.getContentID();
         } catch (MessagingException me) {
-//            if (DEBUG) getLogger().debug("Messaging Exception for getContentUD(): " + me);
         }
         try {
             contentDesc = part.getDescription();
         } catch (MessagingException me) {
-//            if (DEBUG) getLogger().debug("Messaging Exception for getDescription(): " + me);
         }
         try {
             contentEncoding = part.getEncoding();
@@ -187,27 +209,20 @@ public class SimpleMessageAttributes
                 contentEncoding = "7BIT";
             }
         } catch (MessagingException me) {
-//            if (DEBUG) getLogger().debug("Messaging Exception for getEncoding(): " + me);
         }
-
         try {
-//            contentDisposition = part.getDisposition();
+            //            contentDisposition = part.getDisposition();
             contentDisposition = Header.create(part.getHeader("Content-Disposition"));
         } catch (MessagingException me) {
-//                getLogger().debug("Messaging Exception for getEncoding(): " + me);
         }
-
         try {
             // TODO this doesn't work
             lineCount = getLineCount(part);
         } catch (MessagingException me) {
             me.printStackTrace();
-//            if (DEBUG) getLogger().debug("Messaging Exception for getLineCount(): " + me);
         } catch (Exception e) {
             e.printStackTrace();
-//            if (DEBUG) getLogger().debug("Exception for getLineCount(): " + e);
         }
-
         // Recurse through any embedded parts
         if (primaryType.equalsIgnoreCase(MULTIPART)) {
             MimeMultipart container;
@@ -217,12 +232,10 @@ public class SimpleMessageAttributes
                 parts = new SimpleMessageAttributes[count];
                 for (int i = 0; i < count; i++) {
                     BodyPart nextPart = container.getBodyPart(i);
-
                     if (nextPart instanceof MimePart) {
                         SimpleMessageAttributes partAttrs = new SimpleMessageAttributes();
                         partAttrs.parseMimePart((MimePart) nextPart);
                         parts[i] = partAttrs;
-
                     } else {
                     }
                 }
@@ -231,9 +244,8 @@ public class SimpleMessageAttributes
             }
         } else if (primaryType.equalsIgnoreCase("message")) {
             if (secondaryType.equalsIgnoreCase("RFC822")) {
-                //try {
-
-                /*
+            //try {
+            /*
                 MimeMessageWrapper message = new MimeMessageWrapper(part.getInputStream());
                 SimpleMessageAttributes msgAttrs = new SimpleMessageAttributes();
                 msgAttrs.setAttributesFor(message);
@@ -249,10 +261,10 @@ public class SimpleMessageAttributes
                 parts = new SimpleMessageAttributes[1];
                 parts[0] = msgAttrs;
                 */
-                //} catch (Exception e) {
-                //getLogger().error("Error interpreting a message/rfc822: " + e);
-                //e.printStackTrace();
-                //}
+            //} catch (Exception e) {
+            //getLogger().error("Error interpreting a message/rfc822: " + e);
+            //e.printStackTrace();
+            //}
             } else {
                 log.warn("Unknown subtype of message encountered.");
             }
@@ -289,10 +301,10 @@ public class SimpleMessageAttributes
         response.add(SP);
         //4. Sender ---------------
         if (sender != null && sender.length > 0) {
-//            if (DEBUG) getLogger().debug("parsingEnvelope - sender[0] is: " + sender[0]);
             //Check for Netscape feature - sender is local part only
             if (sender[0].indexOf('@') == -1) {
-                response.add(LB + (String) response.get(3) + RB); //first From address
+                //first From address
+                response.add(LB + (String) response.get(3) + RB);
             } else {
                 response.add(LB);
                 for (int i = 0; i < sender.length; i++) {
@@ -302,7 +314,8 @@ public class SimpleMessageAttributes
             }
         } else {
             if (from != null && from.length > 0) {
-                response.add(LB + (String) response.get(3) + RB); //first From address
+                //first From address
+                response.add(LB + (String) response.get(3) + RB);
             } else {
                 response.add(NIL);
             }
@@ -310,7 +323,8 @@ public class SimpleMessageAttributes
         response.add(SP);
         if (replyTo != null && replyTo.length > 0) {
             if (replyTo[0].indexOf('@') == -1) {
-                response.add(LB + (String) response.get(3) + RB); //first From address
+                //first From address
+                response.add(LB + (String) response.get(3) + RB);
             } else {
                 response.add(LB);
                 for (int i = 0; i < replyTo.length; i++) {
@@ -320,7 +334,8 @@ public class SimpleMessageAttributes
             }
         } else {
             if (from != null && from.length > 0) {
-                response.add(LB + (String) response.get(3) + RB); //first From address
+                //first From address
+                response.add(LB + (String) response.get(3) + RB);
             } else {
                 response.add(NIL);
             }
@@ -363,17 +378,16 @@ public class SimpleMessageAttributes
         }
         response.add(SP);
         if (messageID != null && messageID.length > 0) {
+            messageID[0] = StringEscapeUtils.escapeJava(messageID[0]);
             response.add(Q + messageID[0] + Q);
         } else {
             response.add(NIL);
         }
         response.add(RB);
-
         StringBuilder buf = new StringBuilder(16 * response.size());
         for (int j = 0; j < response.size(); j++) {
             buf.append((String) response.get(j));
         }
-
         return buf.toString();
     }
 
@@ -383,7 +397,8 @@ public class SimpleMessageAttributes
     String parseAddress(String address) {
         int comma = address.indexOf(',');
         StringBuilder buf = new StringBuilder();
-        if (comma == -1) { //single address
+        if (comma == -1) {
+            //single address
             buf.append(LB);
             InternetAddress netAddr = null;
             try {
@@ -398,7 +413,8 @@ public class SimpleMessageAttributes
                 buf.append(NIL);
             }
             buf.append(SP);
-            buf.append(NIL); // should add route-addr
+            // should add route-addr
+            buf.append(NIL);
             buf.append(SP);
             try {
                 MailAddress mailAddr = new MailAddress(netAddr.getAddress());
@@ -423,14 +439,14 @@ public class SimpleMessageAttributes
     void decodeContentType(String rawLine) {
         int slash = rawLine.indexOf('/');
         if (slash == -1) {
-//            if (DEBUG) getLogger().debug("decoding ... no slash found");
+            //            if (DEBUG) getLogger().debug("decoding ... no slash found");
             return;
         } else {
             primaryType = rawLine.substring(0, slash).trim();
         }
         int semicolon = rawLine.indexOf(';');
         if (semicolon == -1) {
-//            if (DEBUG) getLogger().debug("decoding ... no semicolon found");
+            //            if (DEBUG) getLogger().debug("decoding ... no semicolon found");
             secondaryType = rawLine.substring(slash + 1).trim();
             return;
         }
@@ -475,7 +491,8 @@ public class SimpleMessageAttributes
             while (it.hasNext()) {
                 buf.append((String) it.next());
                 // Space separated
-                if (it.hasNext()) buf.append(SP);
+                if (it.hasNext())
+                    buf.append(SP);
             }
             buf.append(RB);
         }
@@ -497,21 +514,19 @@ public class SimpleMessageAttributes
                 buf.append(fields);
                 buf.append(' ');
                 buf.append(lineCount);
-
-                // is:    * 1 FETCH (BODYSTRUCTURE ("Text" "plain" NIL NIL NIL NIL    4  -1))
-                // wants: * 1 FETCH (BODYSTRUCTURE ("text" "plain" NIL NIL NIL "8bit" 6  1  NIL NIL NIL))
-                // or:    * 1 FETCH (BODYSTRUCTURE ("text" "plain" NIL NIL NIL "7bit" 28 1 NIL NIL NIL))
-
+            // is:    * 1 FETCH (BODYSTRUCTURE ("Text" "plain" NIL NIL NIL NIL    4  -1))
+            // wants: * 1 FETCH (BODYSTRUCTURE ("text" "plain" NIL NIL NIL "8bit" 6  1  NIL NIL NIL))
+            // or:    * 1 FETCH (BODYSTRUCTURE ("text" "plain" NIL NIL NIL "7bit" 28 1 NIL NIL NIL))
             } else if (primaryType.equalsIgnoreCase(MESSAGE) && secondaryType.equalsIgnoreCase("rfc822")) {
                 buf.append("\"MESSAGE\" \"RFC822\" ");
                 buf.append(fields).append(SP);
-//                setupLogger(parts[0]); // reset transient logger
+                //                setupLogger(parts[0]); // reset transient logger
                 buf.append(parts[0].getEnvelope()).append(SP);
                 buf.append(parts[0].getBodyStructure(false)).append(SP);
                 buf.append(lineCount);
             } else if (primaryType.equalsIgnoreCase(MULTIPART)) {
                 for (int i = 0; i < parts.length; i++) {
-//                    setupLogger(parts[i]); // reset transient getLogger()
+                    //                    setupLogger(parts[i]); // reset transient getLogger()
                     buf.append(parts[i].getBodyStructure(includeExtension));
                 }
                 buf.append(SP + Q).append(secondaryType).append(Q);
@@ -552,7 +567,6 @@ public class SimpleMessageAttributes
                 buf.append(' ');
                 buf.append(size);
             }
-
             if (includeExtension) {
                 //extension is different for multipart and single parts
                 if (primaryType.equalsIgnoreCase(MULTIPART)) {
@@ -585,11 +599,9 @@ public class SimpleMessageAttributes
                     buf.append(NIL);
                 }
             }
-
             buf.append(RB);
             return buf.toString();
         } catch (Exception e) {
-//            getLogger().error("Exception while parsing BodyStrucuture: " + e);
             e.printStackTrace();
             throw new RuntimeException("Exception in parseBodyStructure");
         }
@@ -608,7 +620,6 @@ public class SimpleMessageAttributes
     void setMessageSequenceNumber(int newMsn) {
         messageSequenceNumber = newMsn;
     }
-
 
     /**
      * Provides the unique identity value for this message. UIDs combined with
@@ -669,10 +680,11 @@ public class SimpleMessageAttributes
         return parseBodyStructure(includeExtensions);
     }
 
-
     //~ inner class
     private static class Header {
+
         String value;
+
         Set params = null;
 
         public Header(String line) {
@@ -708,7 +720,7 @@ public class SimpleMessageAttributes
                 ret.append(Q).append(value).append(Q + SP);
                 ret.append(LB);
                 int i = 0;
-                for (Iterator iterator = params.iterator(); iterator.hasNext();) {
+                for (Iterator iterator = params.iterator(); iterator.hasNext(); ) {
                     if (i++ > 0) {
                         ret.append(SP);
                     }
